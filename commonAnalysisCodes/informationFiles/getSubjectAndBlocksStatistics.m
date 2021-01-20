@@ -1,7 +1,7 @@
 % This program provides details of the number of subjects and usable
 % blocks, using data stored in analysedData.
 
-function subjectsWithAnalyzableBlocks = getSubjectAndBlocksStatistics(protocolType,subProjectName)
+function subjectsWithAnalyzableBlocks = getSubjectAndBlocksStatistics(protocolType,subProjectName,spatialFrequenciesToRemove,useCleanData)
 
 if ~exist('protocolType','var');     protocolType = 'SF_ORI';           end
 
@@ -12,14 +12,14 @@ if ~exist('subProjectName','var')
     subProjectName = projectName;
 end
 
-analyzedDataFolder = fullfile(pwd,'analyzedData',projectName,protocolType);
+analyzedDataFolder = fullfile('I:','analyzedData',projectName,protocolType);
 
 subjectNamesList = getGoodSubjectsProjectwise(subProjectName,1,protocolType);
 numSubjectList = length(subjectNamesList);
 subjectsWithAnalyzableBlocks = cell(1,numSubjectList);
 for i=1:numSubjectList
     subjectNames = getGoodFileNamesForSubjects(subjectNamesList{i});
-    [allProts,allSubjectIDs] = getProtsAndSubjectIDs(subjectNames,analyzedDataFolder);
+    [allProts,allSubjectIDs] = getProtsAndSubjectIDs(subjectNames,analyzedDataFolder,spatialFrequenciesToRemove,useCleanData);
 
     disp(['Protocol Type: ' protocolType]);
     disp(['Total number of subjects: ' num2str(length(subjectNames))]);
@@ -33,7 +33,7 @@ for i=1:numSubjectList
 end
 end
 
-function [allProts,allSubjectIDs,allNumTrials] = getProtsAndSubjectIDs(subjectNames,analyzedDataFolder)
+function [allProts,allSubjectIDs,allNumTrials] = getProtsAndSubjectIDs(subjectNames,analyzedDataFolder,spatialFrequenciesToRemove,useCleanData)
 
 stRange = [0.25 0.75];
 refType = 'bipolar'; % 'unipolar' % Set reference type here.
@@ -46,7 +46,20 @@ for iSub = 1:length(subjectNames)
     subjectName = subjectNames{iSub};
     
     analysisDetailsFile = fullfile(analyzedDataFolder,[subjectName '_' refType ...
-        '_stRange_' num2str(1000*stRange(1)) '_' num2str(1000*stRange(2)) '.mat']);
+        '_stRange_' num2str(1000*stRange(1)) '_' num2str(1000*stRange(2))]);
+    
+    if ~isempty(spatialFrequenciesToRemove)
+        analysisDetailsFile = [analysisDetailsFile '_RemoveSF']; %#ok<AGROW>
+        for i=1:length(spatialFrequenciesToRemove)
+            analysisDetailsFile = cat(2,analysisDetailsFile,num2str(spatialFrequenciesToRemove(i)));
+        end
+    end
+
+    if useCleanData
+        analysisDetailsFile = cat(2,analysisDetailsFile,'_CleanData');
+    end
+    
+    analysisDetailsFile = [analysisDetailsFile '.mat']; %#ok<AGROW>
     
     if exist(analysisDetailsFile,'file')
         x=load(analysisDetailsFile);
